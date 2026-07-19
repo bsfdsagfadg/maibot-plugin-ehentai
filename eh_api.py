@@ -296,12 +296,13 @@ class EhParser:
             for c1 in soup.select('#cdiv .c1'):
                 c2 = c1.select_one('.c2')
                 c3 = c1.select_one('.c3')
-                if c2 and c3:
-                    author_elem = c2.select_one('.c3 a, a')
+                c6 = c1.select_one('.c6')
+                if c2 and c3 and c6:
+                    author_elem = c3.select_one('a')
                     author = author_elem.get_text(strip=True) if author_elem else "Unknown"
                     score_elem = c2.select_one('[id^="comment_score_"]')
                     score = score_elem.get_text(strip=True) if score_elem else "0"
-                    content = c3.get_text(separator=' ', strip=True)
+                    content = c6.get_text(separator='\n', strip=True)
                     comments.append({"author": author, "score": score, "content": content})
             if comments:
                 detail['comments'] = comments
