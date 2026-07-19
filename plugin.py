@@ -58,8 +58,8 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="搜索 E-Hentai 画廊",
         detailed_description="搜索 E-Hentai 画廊。支持高级语法如：\n- language:chinese (中文内容)\n- parody:touhou (东方同人)\n支持分页(page)检索。",
         parameters=[
-            ToolParameterInfo(name="query", type=ToolParamType.STRING, description="搜索关键词", required=True),
-            ToolParameterInfo(name="page", type=ToolParamType.INTEGER, description="页码，默认 1", required=False, default=1),
+            ToolParameterInfo(name="query", param_type=ToolParamType.STRING, description="搜索关键词", required=True),
+            ToolParameterInfo(name="page", param_type=ToolParamType.INTEGER, description="页码，默认 1", required=False, default=1),
         ]
     )
     async def eh_search(self, query: str, page: int = 1, **kwargs):
@@ -141,8 +141,8 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="获取当前账号的收藏夹画廊",
         detailed_description="读取当前配置账号的云端收藏夹。可指定 favcat (0-9或'all') 和 page (默认 0)。",
         parameters=[
-            ToolParameterInfo(name="favcat", type=ToolParamType.STRING, description="分类 0-9 或 'all'", required=False, default="all"),
-            ToolParameterInfo(name="page", type=ToolParamType.INTEGER, description="页码，默认 0", required=False, default=0)
+            ToolParameterInfo(name="favcat", param_type=ToolParamType.STRING, description="分类 0-9 或 'all'", required=False, default="all"),
+            ToolParameterInfo(name="page", param_type=ToolParamType.INTEGER, description="页码，默认 0", required=False, default=0)
         ]
     )
     async def eh_get_favorites(self, favcat: str = "all", page: int = 0, **kwargs):
@@ -164,7 +164,7 @@ class EHentaiPlugin(MaiBotPlugin):
         "eh_get_detail",
         brief_description="获取画廊元数据与标签",
         detailed_description="获取画廊详情，包含标签（tags）、评分（rating）、总页数（pages）、评论区及虚拟章节数。",
-        parameters=[ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
+        parameters=[ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
     )
     async def eh_get_detail(self, gallery_id: str, **kwargs):
         def _do():
@@ -204,8 +204,8 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="提交画廊章节后台下载任务",
         detailed_description="提交后台异步下载画廊章节图片。下载完成后会向当前聊天流发送系统通知，收到通知后使用 eh_check_chapter_download 工具获取图片。",
         parameters=[
-            ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID", required=True),
-            ToolParameterInfo(name="chapter", type=ToolParamType.INTEGER, description="章节号 (默认1)", required=False, default=1)
+            ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID", required=True),
+            ToolParameterInfo(name="chapter", param_type=ToolParamType.INTEGER, description="章节号 (默认1)", required=False, default=1)
         ]
     )
     async def eh_read_chapter(self, gallery_id: str, chapter: int = 1, **kwargs):
@@ -268,8 +268,8 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="获取已完成的画廊章节图片",
         detailed_description="在 eh_read_chapter 后台任务完成后调用此工具。将提取缓存的章节图片载入视觉上下文。",
         parameters=[
-            ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID", required=True),
-            ToolParameterInfo(name="chapter", type=ToolParamType.INTEGER, description="章节号 (默认1)", required=False, default=1)
+            ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID", required=True),
+            ToolParameterInfo(name="chapter", param_type=ToolParamType.INTEGER, description="章节号 (默认1)", required=False, default=1)
         ]
     )
     async def eh_check_chapter_download(self, gallery_id: str, chapter: int = 1, **kwargs):
@@ -286,8 +286,8 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="获取画廊单页缩略预览图",
         detailed_description="同步获取画廊指定页的缩略图（通常20-40张）。无需等待后台任务，适用于快速概览画风及内容。",
         parameters=[
-            ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID", required=True),
-            ToolParameterInfo(name="page", type=ToolParamType.INTEGER, description="预览页码 (默认0)", required=False, default=0)
+            ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID", required=True),
+            ToolParameterInfo(name="page", param_type=ToolParamType.INTEGER, description="预览页码 (默认0)", required=False, default=0)
         ]
     )
     async def eh_read_previews(self, gallery_id: str, page: int = 0, **kwargs):
@@ -323,7 +323,7 @@ class EHentaiPlugin(MaiBotPlugin):
         "eh_archive_download",
         brief_description="使用 GP 下载重采样版画廊归档",
         detailed_description="通过 E-Hentai Archiver 消耗 GP 下载画廊（强制重采样版）。下载并解压后将永久缓存，后续必须使用 eh_read_archive 分批读取图片。",
-        parameters=[ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
+        parameters=[ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
     )
     async def eh_archive_download(self, gallery_id: str, **kwargs):
         stream_id = kwargs.get("stream_id")
@@ -374,19 +374,22 @@ class EHentaiPlugin(MaiBotPlugin):
                 download_link = await asyncio.to_thread(_do_archiver_req)
                 
                 def _download_and_extract():
-                    headers = dict(self._get_headers_tuple())
-                    res = eh_api.http_request('GET', download_link, headers=headers, stream=True)
-                    res.raise_for_status()
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
-                        temp_path = tf.name
-                        for chunk in res.iter_content(chunk_size=8192): tf.write(chunk)
-                    with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-                        for member in zip_ref.namelist():
-                            member_path = os.path.normpath(member)
-                            if os.path.isabs(member_path) or member_path.startswith('..'):
-                                continue
-                            zip_ref.extract(member, str(archive_dir))
-                    os.remove(temp_path)
+                    with eh_api.http_request('GET', download_link, headers=dict(self._get_headers_tuple()), stream=True) as res:
+                        res.raise_for_status()
+                        temp_path = None
+                        try:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
+                                temp_path = tf.name
+                                for chunk in res.iter_content(chunk_size=8192): tf.write(chunk)
+                            with zipfile.ZipFile(temp_path, 'r') as zip_ref:
+                                for member in zip_ref.namelist():
+                                    member_path = os.path.normpath(member)
+                                    if os.path.isabs(member_path) or member_path.startswith('..'):
+                                        continue
+                                    zip_ref.extract(member, str(archive_dir))
+                        finally:
+                            if temp_path and os.path.exists(temp_path):
+                                os.remove(temp_path)
                 
                 await asyncio.to_thread(_download_and_extract)
                 await self.ctx.maisaka.context.append(
@@ -411,9 +414,9 @@ class EHentaiPlugin(MaiBotPlugin):
         brief_description="读取已永久缓存的画廊归档图片",
         detailed_description="配合 eh_archive_download 使用。提取本地已永久缓存的画廊归档。支持 offset 和 limit 参数实现分页读取，建议单次请求 limit 保持在 20 张以内。",
         parameters=[
-            ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID", required=True),
-            ToolParameterInfo(name="offset", type=ToolParamType.INTEGER, description="从第几张开始读取 (默认 0)", required=False, default=0),
-            ToolParameterInfo(name="limit", type=ToolParamType.INTEGER, description="每次最多读取几张 (默认 20)", required=False, default=20)
+            ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID", required=True),
+            ToolParameterInfo(name="offset", param_type=ToolParamType.INTEGER, description="从第几张开始读取 (默认 0)", required=False, default=0),
+            ToolParameterInfo(name="limit", param_type=ToolParamType.INTEGER, description="每次最多读取几张 (默认 20)", required=False, default=20)
         ]
     )
     async def eh_read_archive(self, gallery_id: str, offset: int = 0, limit: int = 20, **kwargs):
@@ -423,10 +426,13 @@ class EHentaiPlugin(MaiBotPlugin):
             archive_dir = self.ctx.paths.data_dir / "archives" / f"{gid}_{token}"
             if not archive_dir.exists(): return {"success": False, "error": f"未找到画廊 {gallery_id} 的本地归档缓存，请先执行 eh_archive_download。"}
             
+            import re
+            def natural_sort_key(s):
+                return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
             image_files = []
             for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']: image_files.extend(archive_dir.glob(f"*{ext}"))
             for ext in ['.JPG', '.JPEG', '.PNG', '.GIF', '.WEBP']: image_files.extend(archive_dir.glob(f"*{ext}"))
-            image_files = sorted(list(set(image_files)))
+            image_files = sorted(list(set(image_files)), key=natural_sort_key)
             
             if not image_files: return {"success": False, "error": "缓存目录中没有找到图片。"}
             if offset >= len(image_files): return {"success": False, "error": f"偏移量 {offset} 超出范围，缓存共 {len(image_files)} 张图。"}
@@ -437,7 +443,7 @@ class EHentaiPlugin(MaiBotPlugin):
                 with open(img_path, "rb") as f:
                     data = base64.b64encode(f.read()).decode("ascii")
                     ext = img_path.suffix.lower()
-                    mime_type = "image/png" if ext == ".png" else ("image/gif" if ext == ".gif" else "image/jpeg")
+                    mime_type = "image/png" if ext == ".png" else ("image/gif" if ext == ".gif" else ("image/webp" if ext == ".webp" else "image/jpeg"))
                     content_items.append({"type": "image", "data": data, "mime_type": mime_type, "name": img_path.name})
             return {"success": True, "total": len(image_files), "loaded": len(chunk), "content_items": content_items, "message": f"成功读取本地归档图片，当前批次包含第 {offset} 到 {offset+len(chunk)-1} 张。"}
         try:

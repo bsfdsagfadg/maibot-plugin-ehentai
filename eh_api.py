@@ -15,6 +15,7 @@
 
 import re
 import io
+import threading
 import math
 import struct
 import requests
@@ -50,6 +51,7 @@ gallery_cache = TTLCache(maxsize=500, ttl=3600)
 image_proxy_cache = TTLCache(maxsize=1000, ttl=86400)
 pagination_cache = TTLCache(maxsize=200, ttl=600)
 tag_translation_cache = TTLCache(maxsize=32, ttl=86400)
+cache_lock = threading.Lock()
 
 def decode_search_value(value: str) -> str:
     """
@@ -126,7 +128,7 @@ def parse_tag_translation_markdown(text: str) -> Dict[str, str]:
     return translations
 
 
-@cached(cache=tag_translation_cache)
+@cached(cache=tag_translation_cache, lock=cache_lock)
 def get_tag_translation_map(namespace: str) -> Dict[str, str]:
     filename = TAG_NAMESPACE_FILES.get(namespace.lower())
     if not filename:
@@ -502,7 +504,7 @@ class ImageProcessor:
 # ==============================================================================
 # 核心业务逻辑 (独立的、可缓存的函数)
 # ==============================================================================
-@cached(cache=list_cache)
+@cached(cache=list_cache, lock=cache_lock)
 def get_gallery_list_data(url: str, headers: tuple):
     plugin_logger.info(f"缓存未命中或已过期，正在抓取列表页: {url}")
     html = fetch_page_for_request(url, dict(headers))
@@ -514,7 +516,7 @@ def get_gallery_list_data(url: str, headers: tuple):
     # EhParser 内部已经增加了日志，这里返回即可
     return parsed_data
 
-@cached(cache=gallery_cache)
+@cached(cache=gallery_cache, lock=cache_lock)
 def get_gallery_detail_data(gid: int, token: str, headers: tuple, url_builder: 'EhUrlBuilder'):
     url = url_builder.build_gallery_url(gid=gid, token=token)
     plugin_logger.info(f"缓存未命中或已过期，正在抓取详情页: {url}")
@@ -531,7 +533,7 @@ def get_gallery_detail_data(gid: int, token: str, headers: tuple, url_builder: '
         
     return parsed_data
 
-@cached(cache=gallery_cache)
+@cached(cache=gallery_cache, lock=cache_lock)
 def get_gallery_images_data(gid: int, token: str, page: int, headers: tuple, url_builder: 'EhUrlBuilder', start_index: int = 0, limit: Optional[int] = None):
     url = f"{url_builder.build_gallery_url(gid=gid, token=token)}?p={page}"
     plugin_logger.info(f"缓存未命中或已过期，正在抓取图片列表并解析指定范围大图: {url}")
@@ -596,7 +598,7 @@ def get_virtual_chapter_images_data(gid: int, token: str, chapter: int, headers:
     return images
 
 
-@cached(cache=image_proxy_cache)
+@cached(cache=image_proxy_cache, lock=cache_lock)
 def get_processed_image_data(url: str, headers: tuple, max_width: int, quality: int, crop_params: Optional[tuple] = None, output_format: str = "jpeg"):
     plugin_logger.info(f"图片缓存未命中或已过期，正在处理图片: {url}")
     try:
