@@ -36,8 +36,6 @@ image_proxy_cache = TTLCache(maxsize=1000, ttl=86400)
 pagination_cache = TTLCache(maxsize=200, ttl=600)
 tag_translation_cache = TTLCache(maxsize=32, ttl=86400)
 
-import sys
-sys.stdout.reconfigure(encoding="utf-8")
 
 def decode_search_value(value: str) -> str:
     """
@@ -611,7 +609,9 @@ def parse_id(id_str: str) -> tuple:
         if '_' in id_str:
             parts = id_str.split('_')
             if len(parts) == 2:
-                return int(parts[0]), parts[1]
+                gid_str, token = parts
+                if re.match(r'^\d+$', gid_str) and re.match(r'^[a-f0-9]+$', token):
+                    return int(gid_str), token
         return None, None
     except Exception as e:
         logging.warning(f"解析 ID 失败: {e}")
