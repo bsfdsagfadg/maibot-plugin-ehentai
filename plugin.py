@@ -142,6 +142,7 @@ class EHentaiPlugin(MaiBotPlugin):
             if not parsed: return {"success": False, "error": "获取详情失败"}
             device_info = eh_api.parse_user_agent(self.config.plugin.user_agent)
             translate_tags = eh_api.is_chinese_locale(device_info)
+            flat_tags = eh_api.flatten_eh_tags(parsed, translate=translate_tags)
             cover_url = parsed.get('thumbnail')
             content_items = []
             if cover_url:
