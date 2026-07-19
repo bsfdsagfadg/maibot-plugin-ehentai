@@ -14,6 +14,7 @@ class EHentaiPluginSection(PluginConfigBase):
     config_version: str = Field(default="1.0.0", description="配置版本")
     enabled: bool = Field(default=True, description="是否启用")
     cookie: str = Field(default="", description="用于访问 ExHentai 的 Cookie (igneous, ipb_member_id 等)")
+    proxy: str = Field(default="", description="HTTP/HTTPS 代理地址，例如 http://127.0.0.1:7890，留空则不使用代理")
     proxy_width: int = Field(default=400, description="图片缩放宽度（影响内存占用）")
     proxy_quality: int = Field(default=50, description="图片压缩质量 (1-100)")
     request_timeout: float = Field(default=30.0, description="请求超时时间(秒)")
@@ -25,8 +26,10 @@ class EHentaiConfig(PluginConfigBase):
 class EHentaiPlugin(MaiBotPlugin):
     config_model = EHentaiConfig
 
+
     async def on_load(self) -> None:
         self.ctx.logger.info("E-Hentai 插件已加载")
+        eh_api.PROXY_URL = self.config.plugin.proxy
         eh_api.REQUEST_TIMEOUT = self.config.plugin.request_timeout
         self.download_cache = {}
         self._bg_tasks = set()
@@ -279,7 +282,7 @@ class EHentaiPlugin(MaiBotPlugin):
         stream_id = kwargs.get("stream_id")
         if not stream_id: return {"success": False, "error": "缺少 stream_id"}
         async def background_task():
-            import zipfile, os, tempfile, requests
+            import zipfile, os, tempfile
             try:
                 gid, token = eh_api.parse_id(gallery_id)
                 if not gid: raise ValueError("ID 格式错误")
@@ -297,12 +300,12 @@ class EHentaiPlugin(MaiBotPlugin):
                 
                 def _do_archiver_req():
                     headers = dict(self._get_headers_tuple())
-                    res = requests.get(archiver_url, headers=headers, timeout=eh_api.REQUEST_TIMEOUT)
+                    res = eh_api.http_request('GET', archiver_url, headers=headers)
                     res.raise_for_status()
                     form_action = eh_api.EhParser.parse_archiver_form_url(res.text)
                     if not form_action: raise ValueError("未能找到下载表单。GP 可能不足或画廊不支持 Archiver。")
                     data = {"dltype": "res", "dlcheck": "Download Resample Archive"}
-                    post_res = requests.post(form_action, data=data, headers=headers, timeout=eh_api.REQUEST_TIMEOUT)
+                    post_res = eh_api.http_request('POST', form_action, data=data, headers=headers)
                     post_res.raise_for_status()
                     download_link = eh_api.EhParser.get_archiver_download_url(post_res.text)
                     if not download_link: raise ValueError("未能获取真实的下载直链。")
@@ -312,7 +315,7 @@ class EHentaiPlugin(MaiBotPlugin):
                 
                 def _download_and_extract():
                     headers = dict(self._get_headers_tuple())
-                    res = requests.get(download_link, headers=headers, stream=True, timeout=eh_api.REQUEST_TIMEOUT)
+                    res = eh_api.http_request('GET', download_link, headers=headers, stream=True)
                     res.raise_for_status()
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
                         temp_path = tf.name

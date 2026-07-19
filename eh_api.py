@@ -26,6 +26,14 @@ from PIL import Image
 from cachetools import cached, TTLCache
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+PROXY_URL: Optional[str] = None
+
+def http_request(method: str, url: str, **kwargs) -> requests.Response:
+    if PROXY_URL:
+        kwargs.setdefault('proxies', {'http': PROXY_URL, 'https': PROXY_URL})
+    kwargs.setdefault('timeout', REQUEST_TIMEOUT)
+    return requests.request(method, url, **kwargs)
+
 # ==============================================================================
 # 缓存配置
 # ==============================================================================
@@ -117,7 +125,7 @@ def get_tag_translation_map(namespace: str) -> Dict[str, str]:
         return {}
     url = f"{TAG_TRANSLATION_BASE_URL}/{filename}"
     try:
-        response = requests.get(url, timeout=REQUEST_TIMEOUT)
+        response = http_request('GET', url)
         response.raise_for_status()
         return parse_tag_translation_markdown(response.text)
     except Exception as e:
@@ -565,7 +573,7 @@ def get_virtual_chapter_images_data(gid: int, token: str, chapter: int, headers:
 def get_processed_image_data(url: str, headers: tuple, max_width: int, quality: int, crop_params: Optional[tuple] = None, output_format: str = "jpeg"):
     logging.info(f"图片缓存未命中或已过期，正在处理图片: {url}")
     try:
-        response = requests.get(url, headers=dict(headers), timeout=REQUEST_TIMEOUT)
+        response = http_request('GET', url, headers=dict(headers))
         response.raise_for_status()
         crop_dict = None
         if crop_params: crop_dict = {'x': crop_params[0], 'y': crop_params[1], 'w': crop_params[2], 'h': crop_params[3]}
@@ -619,7 +627,7 @@ def parse_id(id_str: str) -> tuple:
 
 def fetch_page_for_request(url: str, headers: dict) -> Optional[str]:
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = http_request('GET', url, headers=headers)
         response.raise_for_status()
         return response.text
     except requests.RequestException as e:
@@ -627,7 +635,7 @@ def fetch_page_for_request(url: str, headers: dict) -> Optional[str]:
             logging.warning(f"ExHentai 请求失败，尝试回退到 E-Hentai: {e}, URL: {url}")
             fallback_url = url.replace('exhentai.org', 'e-hentai.org')
             try:
-                response = requests.get(fallback_url, headers=headers, timeout=REQUEST_TIMEOUT)
+                response = http_request('GET', fallback_url, headers=headers)
                 response.raise_for_status()
                 logging.info(f"成功回退到 E-Hentai: {fallback_url}")
                 return response.text
