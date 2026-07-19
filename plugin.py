@@ -426,13 +426,10 @@ class EHentaiPlugin(MaiBotPlugin):
             archive_dir = self.ctx.paths.data_dir / "archives" / f"{gid}_{token}"
             if not archive_dir.exists(): return {"success": False, "error": f"未找到画廊 {gallery_id} 的本地归档缓存，请先执行 eh_archive_download。"}
             
-            import re
-            def natural_sort_key(s):
-                return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
             image_files = []
             for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']: image_files.extend(archive_dir.glob(f"*{ext}"))
             for ext in ['.JPG', '.JPEG', '.PNG', '.GIF', '.WEBP']: image_files.extend(archive_dir.glob(f"*{ext}"))
-            image_files = sorted(list(set(image_files)), key=natural_sort_key)
+            image_files = sorted(list(set(image_files)), key=lambda p: p.name)
             
             if not image_files: return {"success": False, "error": "缓存目录中没有找到图片。"}
             if offset >= len(image_files): return {"success": False, "error": f"偏移量 {offset} 超出范围，缓存共 {len(image_files)} 张图。"}
@@ -470,13 +467,10 @@ class EHentaiPlugin(MaiBotPlugin):
             archive_dir = self.ctx.paths.data_dir / "archives" / f"{gid}_{token}"
             if not archive_dir.exists(): raise ValueError(f"未找到画廊 {gallery_id} 的本地归档缓存，请先执行 eh_archive_download。")
             
-            import re
-            def natural_sort_key(s):
-                return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
             image_files = []
             for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']: image_files.extend(archive_dir.glob(f"*{ext}"))
             for ext in ['.JPG', '.JPEG', '.PNG', '.GIF', '.WEBP']: image_files.extend(archive_dir.glob(f"*{ext}"))
-            image_files = sorted(list(set(image_files)), key=natural_sort_key)
+            image_files = sorted(list(set(image_files)), key=lambda p: p.name)
             
             if not image_files: raise ValueError("缓存目录中没有找到图片。")
             if offset >= len(image_files): raise ValueError(f"偏移量 {offset} 超出范围，缓存共 {len(image_files)} 张图。")
