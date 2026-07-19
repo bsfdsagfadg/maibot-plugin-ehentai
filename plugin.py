@@ -142,7 +142,12 @@ class EHentaiPlugin(MaiBotPlugin):
             if not parsed: return {"success": False, "error": "获取详情失败"}
             device_info = eh_api.parse_user_agent(self.config.plugin.user_agent)
             translate_tags = eh_api.is_chinese_locale(device_info)
-            flat_tags = eh_api.flatten_eh_tags(parsed, translate=translate_tags)
+            cover_url = parsed.get('thumbnail')
+            content_items = []
+            if cover_url:
+                processed_bytes = eh_api.get_processed_image_data(cover_url, self._get_headers_tuple(), self.config.plugin.proxy_width, self.config.plugin.proxy_quality)
+                if processed_bytes:
+                    content_items.append({"type": "image", "data": base64.b64encode(processed_bytes).decode("ascii"), "mime_type": "image/jpeg", "name": "cover.jpg"})
             return {
                 "success": True,
                 "gallery_id": gallery_id,
@@ -152,7 +157,8 @@ class EHentaiPlugin(MaiBotPlugin):
                 "tags": flat_tags,
                 "total_chapters": max(1, (parsed.get('pages', 0) + eh_api.VIRTUAL_CHAPTER_SIZE - 1) // eh_api.VIRTUAL_CHAPTER_SIZE),
                 "comments": parsed.get('comments', []),
-                "cover": parsed.get('thumbnail')
+                "cover_url": cover_url,
+                "content_items": content_items
             }
         try:
             return await asyncio.to_thread(_do)
