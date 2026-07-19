@@ -323,6 +323,20 @@ class EhParser:
         if not match:
             match = re.search(r'href="([^"]+)">Click Here To Start Downloading', html)
         return match.group(1) if match else None
+        
+    @staticmethod
+    def parse_exchange_balances(html: str) -> Dict[str, float]:
+        balances = {}
+        soup = BeautifulSoup(html, 'html.parser')
+        for div in soup.find_all('div'):
+            text = div.get_text(strip=True)
+            if text.startswith('Available:'):
+                match = re.search(r'Available:\s*([\d,.]+)\s*(Credits|Hath|kGP)', text)
+                if match:
+                    val = float(match.group(1).replace(',', ''))
+                    unit = match.group(2)
+                    balances[unit] = val
+        return balances
 
     @staticmethod
     def parse_archiver_form_url(html: str) -> Optional[str]:

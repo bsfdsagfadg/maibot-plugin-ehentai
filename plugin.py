@@ -104,6 +104,39 @@ class EHentaiPlugin(MaiBotPlugin):
             return {"success": False, "error": str(e)}
 
     @Tool(
+        "eh_get_balance",
+        brief_description="获取账户的货币余额 (GP, Hath, Credits)",
+        detailed_description="查询当前账号在 E-Hentai/ExHentai 的货币余额，包含 GP、Hath 以及 Credits，需要配置 Cookie。",
+        parameters=[]
+    )
+    async def eh_get_balance(self, **kwargs):
+        if not self.config.plugin.cookie:
+            return {"success": False, "error": "请先在配置中填入 Cookie 以查询余额"}
+        def _do():
+            url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
+            base_url = url_builder.base_url
+            headers = dict(self._get_headers_tuple())
+            
+            hath_res = eh_api.http_request('GET', f"{base_url}/exchange.php?t=hath", headers=headers)
+            hath_res.raise_for_status()
+            balances = eh_api.EhParser.parse_exchange_balances(hath_res.text)
+            
+            gp_res = eh_api.http_request('GET', f"{base_url}/exchange.php?t=gp", headers=headers)
+            gp_res.raise_for_status()
+            balances.update(eh_api.EhParser.parse_exchange_balances(gp_res.text))
+            
+            final_balances = {
+                "Credits": int(balances.get("Credits", 0)),
+                "Hath": int(balances.get("Hath", 0)),
+                "GP": int(balances.get("kGP", 0) * 1000)
+            }
+            return {"success": True, "balances": final_balances}
+        try:
+            return await asyncio.to_thread(_do)
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @Tool(
         "eh_get_favorites",
         brief_description="获取当前账号的收藏夹画廊",
         detailed_description="读取当前配置账号的云端收藏夹。可指定 favcat (0-9或'all') 和 page (默认 0)。",
