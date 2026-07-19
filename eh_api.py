@@ -16,7 +16,6 @@
 import re
 import io
 import threading
-import math
 import struct
 import requests
 import logging

@@ -342,6 +342,7 @@ class EHentaiPlugin(MaiBotPlugin):
                     return
                 archive_dir.mkdir(parents=True, exist_ok=True)
                 url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
+                archiver_url = f"{url_builder.base_url}/archiver.php?gid={gid}&token={token}"
                 def _do_archiver_req():
                     headers = dict(self._get_headers_tuple())
                     res = eh_api.http_request('GET', archiver_url, headers=headers)
