@@ -583,8 +583,6 @@ def get_processed_image_data(url: str, headers: tuple, max_width: int, quality: 
     except Exception as e: logging.error(f"处理图片时发生未知错误: {e}"); return None
 
 # ==============================================================================
-# Flask 应用配置与路由
-# ==============================================================================
 REQUEST_TIMEOUT = 20; DEFAULT_PROXY_WIDTH = 400; DEFAULT_PROXY_QUALITY = 50
 THUMBNAIL_PROXY_WIDTH = 150; THUMBNAIL_PROXY_QUALITY = 40
 MAX_CONCURRENT_REQUESTS = 10

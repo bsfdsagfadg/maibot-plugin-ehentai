@@ -1,5 +1,8 @@
 import base64
 import asyncio
+import zipfile
+import os
+import tempfile
 from typing import Any
 from urllib.parse import urlencode
 
@@ -283,7 +286,6 @@ class EHentaiPlugin(MaiBotPlugin):
         stream_id = kwargs.get("stream_id")
         if not stream_id: return {"success": False, "error": "缺少 stream_id"}
         async def background_task():
-            import zipfile, os, tempfile
             try:
                 gid, token = eh_api.parse_id(gallery_id)
                 if not gid: raise ValueError("ID 格式错误")
