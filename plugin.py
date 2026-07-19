@@ -226,7 +226,7 @@ class EHentaiPlugin(MaiBotPlugin):
         cache_key = f"{gallery_id}_{chapter}"
         if cache_key not in self.download_cache: return {"success": False, "error": f"未找到画廊 {gallery_id} 第 {chapter} 章的下载任务记录。"}
         entry = self.download_cache[cache_key]
-        if entry["status"] == "downloading": return {"success": False, "error": "该章节正在后台下载，请等待 [System] 完成通知。"}
+        if entry["status"] == "downloading": return {"success": False, "error": "该章节正在后台下载，请等待完成通知。"}
         elif entry["status"] == "error": return {"success": False, "error": f"该章节下载已失败: {entry.get('error')}"}
         items = entry.get("items", [])
         return {"success": True, "content": f"画廊 {gallery_id} 第 {chapter} 章读取成功，共 {len(items)} 张图片。", "content_items": items}
@@ -325,7 +325,7 @@ class EHentaiPlugin(MaiBotPlugin):
                 await self.ctx.maisaka.context.append(
                     stream_id=stream_id,
                     segments=[{"type": "text", "content": f"画廊 {gallery_id} (重采样版) 已成功缓存至本地，请使用 eh_read_archive 读取。"}],
-                    visible_text=f"[System] 画廊 {gallery_id} 归档下载完成"
+                    visible_text=f"画廊 {gallery_id} 归档下载完成"
                 )
             except Exception as e:
                 self.ctx.logger.error(f"Archive 下载失败: {e}")
