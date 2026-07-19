@@ -36,7 +36,6 @@ image_proxy_cache = TTLCache(maxsize=1000, ttl=86400)
 pagination_cache = TTLCache(maxsize=200, ttl=600)
 tag_translation_cache = TTLCache(maxsize=32, ttl=86400)
 
-
 def decode_search_value(value: str) -> str:
     """
     判断并解码搜索值
