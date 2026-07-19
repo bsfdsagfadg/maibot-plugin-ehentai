@@ -113,18 +113,14 @@ class EHentaiPlugin(MaiBotPlugin):
         if not self.config.plugin.cookie:
             return {"success": False, "error": "请先在配置中填入 Cookie 以查询余额"}
         def _do():
-            url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
-            base_url = url_builder.base_url
+            base_url = "https://e-hentai.org"
             headers = dict(self._get_headers_tuple())
-            
             hath_res = eh_api.http_request('GET', f"{base_url}/exchange.php?t=hath", headers=headers)
             hath_res.raise_for_status()
             balances = eh_api.EhParser.parse_exchange_balances(hath_res.text)
-            
             gp_res = eh_api.http_request('GET', f"{base_url}/exchange.php?t=gp", headers=headers)
             gp_res.raise_for_status()
             balances.update(eh_api.EhParser.parse_exchange_balances(gp_res.text))
-            
             final_balances = {
                 "Credits": int(balances.get("Credits", 0)),
                 "Hath": int(balances.get("Hath", 0)),
@@ -135,7 +131,6 @@ class EHentaiPlugin(MaiBotPlugin):
             return await asyncio.to_thread(_do)
         except Exception as e:
             return {"success": False, "error": str(e)}
-
     @Tool(
         "eh_get_favorites",
         brief_description="获取当前账号的收藏夹画廊",
