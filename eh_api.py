@@ -317,7 +317,11 @@ class EhParser:
 
     @staticmethod
     def get_archiver_download_url(html: str) -> Optional[str]:
-        match = re.search(r'href="([^"]+)">Click Here To Start Downloading', html)
+        match = re.search(r'document\.location\s*=\s*"([^"]+)"', html)
+        if not match:
+            match = re.search(r'href="([^"]+)">Click here if your browser does not continue automatically', html)
+        if not match:
+            match = re.search(r'href="([^"]+)">Click Here To Start Downloading', html)
         return match.group(1) if match else None
 
     @staticmethod
