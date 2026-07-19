@@ -312,13 +312,17 @@ class EHentaiPlugin(MaiBotPlugin):
                 
                 def _download_and_extract():
                     headers = dict(self._get_headers_tuple())
-                    res = requests.get(download_link, headers=headers, stream=True)
+                    res = requests.get(download_link, headers=headers, stream=True, timeout=eh_api.REQUEST_TIMEOUT)
                     res.raise_for_status()
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
                         temp_path = tf.name
                         for chunk in res.iter_content(chunk_size=8192): tf.write(chunk)
                     with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-                        zip_ref.extractall(str(archive_dir))
+                        for member in zip_ref.namelist():
+                            member_path = os.path.normpath(member)
+                            if os.path.isabs(member_path) or member_path.startswith('..'):
+                                continue
+                            zip_ref.extract(member, str(archive_dir))
                     os.remove(temp_path)
                 
                 await asyncio.to_thread(_download_and_extract)

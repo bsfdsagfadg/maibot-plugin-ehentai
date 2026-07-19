@@ -50,9 +50,7 @@
     }
   ],
   "capabilities": [
-    "maisaka.context.append",
-    "paths.data_dir",
-    "logger"
+    "maisaka.context.append"
   ],
   "i18n": {
     "default_locale": "zh-CN",
