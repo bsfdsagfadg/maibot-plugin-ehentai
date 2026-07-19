@@ -40,6 +40,10 @@ class EHentaiPlugin(MaiBotPlugin):
 
     async def on_unload(self) -> None:
         self.ctx.logger.info("E-Hentai 插件已卸载")
+        for task in list(self._bg_tasks):
+            if not task.done():
+                task.cancel()
+        self._bg_tasks.clear()
 
     async def on_config_update(self, scope: str, config_data: dict[str, Any], version: str) -> None:
         if scope == "self":
@@ -447,5 +451,56 @@ class EHentaiPlugin(MaiBotPlugin):
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-def create_plugin():
+    @Tool(
+        "eh_forward_archive",
+        brief_description="将本地缓存的画廊归档作为合并转发消息发送",
+        detailed_description="配合 eh_archive_download 使用。提取本地已永久缓存的画廊归档图片并将其作为合并转发消息发送到当前消息流中，避免在普通聊天中出现刷屏。",
+        parameters=[
+            ToolParameterInfo(name="gallery_id", param_type=ToolParamType.STRING, description="画廊 ID", required=True),
+            ToolParameterInfo(name="offset", param_type=ToolParamType.INTEGER, description="从第几张开始读取 (默认 0)", required=False, default=0),
+            ToolParameterInfo(name="limit", param_type=ToolParamType.INTEGER, description="每次最多发送几张 (默认 20)", required=False, default=20)
+        ]
+    )
+    async def eh_forward_archive(self, gallery_id: str, offset: int = 0, limit: int = 20, **kwargs):
+        stream_id = kwargs.get("stream_id")
+        if not stream_id: return {"success": False, "error": "缺少 stream_id，无法发送合并转发"}
+        def _do():
+            gid, token = eh_api.parse_id(gallery_id)
+            if not gid: raise ValueError("ID 格式错误")
+            archive_dir = self.ctx.paths.data_dir / "archives" / f"{gid}_{token}"
+            if not archive_dir.exists(): raise ValueError(f"未找到画廊 {gallery_id} 的本地归档缓存，请先执行 eh_archive_download。")
+            
+            import re
+            def natural_sort_key(s):
+                return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
+            image_files = []
+            for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']: image_files.extend(archive_dir.glob(f"*{ext}"))
+            for ext in ['.JPG', '.JPEG', '.PNG', '.GIF', '.WEBP']: image_files.extend(archive_dir.glob(f"*{ext}"))
+            image_files = sorted(list(set(image_files)), key=natural_sort_key)
+            
+            if not image_files: raise ValueError("缓存目录中没有找到图片。")
+            if offset >= len(image_files): raise ValueError(f"偏移量 {offset} 超出范围，缓存共 {len(image_files)} 张图。")
+            
+            chunk = image_files[offset:offset+limit]
+            forward_messages = []
+            for img_path in chunk:
+                with open(img_path, "rb") as f:
+                    data = base64.b64encode(f.read()).decode("ascii")
+                    forward_messages.append({
+                        "user_nickname": "E-Hentai Archiver",
+                        "content": [
+                            {"type": "text", "content": f"Page: {img_path.name}\n"},
+                            {"type": "image", "content": data}
+                        ]
+                    })
+            return forward_messages, len(image_files), len(chunk)
+            
+        try:
+            forward_messages, total, loaded = await asyncio.to_thread(_do)
+            await self.ctx.send.forward(messages=forward_messages, stream_id=stream_id)
+            return {"success": True, "total": total, "loaded": loaded, "message": f"成功读取本地归档图片并已作为合并转发发送，当前批次包含第 {offset} 到 {offset+loaded-1} 张。"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+def create_plugin() -> EHentaiPlugin:
     return EHentaiPlugin()

@@ -14,6 +14,7 @@
 - **`eh_read_previews`**: 秒级极速提取整页缩略预览图，适用于快速扫掠画风与主要剧情。
 - **`eh_read_chapter` & `eh_check_chapter_download`**: 支持异步后台并发下载并解析整个章节（默认 20 页/章），采用聊天流内消息无侵入通知，完美兼容 MaiBot 的 Focus 模式。
 - **`eh_archive_download` & `eh_read_archive`**: GP 消耗接口。通过 E-Hentai Archiver 接口强制下载重采样版原图归档（zip），并在本机进行永久缓存提取。
+- **`eh_forward_archive`**: 配合 `eh_archive_download` 使用。将已永久缓存的本地归档图片打包成合并转发消息发送，防止在普通聊天会话中多图刷屏。
 
 ## 安装与部署
 
@@ -50,3 +51,10 @@ user_agent = "MaiBot(1.0.0)/Server/Host/Linux/1.0/1.0/zh/CN"
 
 本项目底层 API 逻辑解析部分借鉴自 [vela-py-eh-api-server](https://github.com/sf-yuzifu/vela-py-eh-api-server)。
 由于上游项目采用 **AGPL-3.0** 协议，本插件仓库同样遵循且开源于 [AGPL-3.0 License](./LICENSE) 之下。
+
+## 更新日志
+
+### v1.0.1
+- 新增默认配置文件 `config.toml`，开箱即用。
+- 优化了插件的生命周期安全性，支持卸载及配置热重载时安全清理后台异步下载/解析任务，防止内存与资源泄漏。
+- 完善了插件入口函数 `create_plugin` 的类型注解，使其符合 `maibot-plugin-sdk` 的推荐标准。

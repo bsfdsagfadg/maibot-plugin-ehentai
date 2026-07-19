@@ -1,0 +1,9 @@
+[plugin]
+config_version = "1.0.0"
+enabled = true
+cookie = ""
+proxy = ""
+proxy_width = 400
+proxy_quality = 50
+request_timeout = 30.0
+user_agent = "MaiBot(1.0.0)/Server/Host/Linux/1.0/1.0/zh/CN"
