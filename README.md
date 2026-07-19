@@ -11,8 +11,8 @@
 - **`eh_get_favorites`**: 云端同步读取配置账号下的个人收藏夹分类。
 - **`eh_get_detail`**: 深入解析指定画廊的元数据，包含标签平铺、汉化翻译以及底部的原生评论区抓取。
 - **`eh_read_previews`**: 秒级极速提取整页缩略预览图，适用于快速扫掠画风与主要剧情。
-- **`eh_read_chapter` & `eh_check_chapter_download`**: 支持异步后台并发下载并解析整个章节（默认 20 页/章），采用聊天流内 `[System]` 消息无侵入通知，完美兼容 MaiBot 的 Focus 模式。
-- **`eh_archive_download` & `eh_read_archive`**: 硬核 GP 消耗接口。通过 E-Hentai Archiver 接口强制下载重采样版原图归档（zip），并在本机进行永久缓存提取。
+- **`eh_read_chapter` & `eh_check_chapter_download`**: 支持异步后台并发下载并解析整个章节（默认 20 页/章），采用聊天流内消息无侵入通知，完美兼容 MaiBot 的 Focus 模式。
+- **`eh_archive_download` & `eh_read_archive`**: GP 消耗接口。通过 E-Hentai Archiver 接口强制下载重采样版原图归档（zip），并在本机进行永久缓存提取。
 
 ## 安装与部署
 
