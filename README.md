@@ -9,7 +9,8 @@
 - **`eh_search`**: 支持高级搜索语法的画廊检索功能（如 `language:chinese`）。
 - **`eh_popular`**: 获取 E-Hentai 首页的热门榜单画廊。
 - **`eh_get_favorites`**: 云端同步读取配置账号下的个人收藏夹分类。
-- **`eh_get_detail`**: 深入解析指定画廊的元数据，包含标签平铺、汉化翻译以及底部的原生评论区抓取。
+- **`eh_get_detail`**: 深入解析指定画廊的元数据，包含封面、标签平铺、汉化翻译以及底部的原生评论区抓取。
+- **`eh_get_balance`**: 查询并换算账号下的 GP、Hath 以及 Credits 的货币余额。
 - **`eh_read_previews`**: 秒级极速提取整页缩略预览图，适用于快速扫掠画风与主要剧情。
 - **`eh_read_chapter` & `eh_check_chapter_download`**: 支持异步后台并发下载并解析整个章节（默认 20 页/章），采用聊天流内消息无侵入通知，完美兼容 MaiBot 的 Focus 模式。
 - **`eh_archive_download` & `eh_read_archive`**: GP 消耗接口。通过 E-Hentai Archiver 接口强制下载重采样版原图归档（zip），并在本机进行永久缓存提取。
@@ -33,6 +34,7 @@
 config_version = "1.0.0"
 enabled = true
 cookie = "ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx"
+proxy = "http://127.0.0.1:7890"
 proxy_width = 400
 proxy_quality = 50
 request_timeout = 30.0
@@ -41,6 +43,7 @@ user_agent = "MaiBot(1.0.0)/Server/Host/Linux/1.0/1.0/zh/CN"
 
 > **注意**：
 > - 填入正确的 Cookie（含 `igneous`）后，插件将自动将请求域名提升至 `exhentai.org`。
+> - 填写 `proxy` 即可实现代理连通，且支持后台热更新。
 > - `user_agent` 中包含 `zh` 或 `CN` 会自动触发 EhTagTranslation 标签汉化映射机制。
 
 ## 开源与协议
