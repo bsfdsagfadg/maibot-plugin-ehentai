@@ -27,12 +27,20 @@ from cachetools import cached, TTLCache
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 PROXY_URL: Optional[str] = None
+plugin_logger = logging.getLogger(__name__)
 
 def http_request(method: str, url: str, **kwargs) -> requests.Response:
     if PROXY_URL:
         kwargs.setdefault('proxies', {'http': PROXY_URL, 'https': PROXY_URL})
     kwargs.setdefault('timeout', REQUEST_TIMEOUT)
-    return requests.request(method, url, **kwargs)
+    plugin_logger.info(f"[http_request] Method: {method}, URL: {url}, PROXY: {PROXY_URL}")
+    try:
+        response = requests.request(method, url, **kwargs)
+        plugin_logger.info(f"[http_request] Response: {response.status_code}")
+        return response
+    except Exception as e:
+        plugin_logger.error(f"[http_request] Error: {e}")
+        raise
 
 # ==============================================================================
 # 缓存配置
@@ -129,7 +137,7 @@ def get_tag_translation_map(namespace: str) -> Dict[str, str]:
         response.raise_for_status()
         return parse_tag_translation_markdown(response.text)
     except Exception as e:
-        logging.warning(f"加载 EhTagTranslation 数据失败: {namespace}, {e}")
+        plugin_logger.warning(f"加载 EhTagTranslation 数据失败: {namespace}, {e}")
         return {}
 
 
@@ -179,8 +187,8 @@ class EhParser:
         main_table = soup.find('table', class_='itg gltc')
         # 如果找不到主表格，记录日志并返回空结果
         if not main_table:
-            logging.warning("未能解析到画廊列表 (找不到 'itg gltc' 表格)。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("未能解析到画廊列表 (找不到 'itg gltc' 表格)。页面原始内容如下：")
+            plugin_logger.debug(html)
             return {'galleries': [], 'pagination': {}}
         
         rows = main_table.find_all('tr')
@@ -218,12 +226,12 @@ class EhParser:
                         pages_match = EhParser.PATTERN_PAGES.search(pages_text_node)
                         if pages_match: gallery['pages'] = int(pages_match.group(1))
                 galleries.append(gallery)
-            except Exception as e: logging.error(f"解析画廊项时发生错误: {e}"); continue
+            except Exception as e: plugin_logger.error(f"解析画廊项时发生错误: {e}"); continue
         
         # 如果循环后列表仍为空，可能页面有内容但所有行都解析失败
         if not galleries and len(rows) > 1: # len(rows) > 1 是为了排除只有表头的情况
-            logging.warning("画廊列表解析结果为空，可能所有行都解析失败。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("画廊列表解析结果为空，可能所有行都解析失败。页面原始内容如下：")
+            plugin_logger.debug(html)
 
         pagination = {'has_next': False, 'next_id': None}
         try:
@@ -235,7 +243,7 @@ class EhParser:
                     href = next_link['href']
                     next_id_match = EhParser.PATTERN_NEXT_ID.search(href)
                     if next_id_match: pagination['next_id'] = next_id_match.group(1)
-        except Exception as e: logging.error(f"解析分页信息时出错: {e}")
+        except Exception as e: plugin_logger.error(f"解析分页信息时出错: {e}")
         return {'galleries': galleries, 'pagination': pagination}
 
     @staticmethod
@@ -244,8 +252,8 @@ class EhParser:
         try:
             # 检查核心元素是否存在
             if not soup.select_one('#gn') and not soup.select_one('#gj'):
-                logging.warning("未能解析到画廊详情 (找不到标题元素 #gn 或 #gj)。页面原始内容如下：")
-                logging.debug(html)
+                plugin_logger.warning("未能解析到画廊详情 (找不到标题元素 #gn 或 #gj)。页面原始内容如下：")
+                plugin_logger.debug(html)
                 return {}
 
             title_elem = soup.select_one('#gn');
@@ -297,12 +305,12 @@ class EhParser:
                     comments.append({"author": author, "score": score, "content": content})
             if comments:
                 detail['comments'] = comments
-        except Exception as e: logging.error(f"解析画廊详情时出错: {e}")
+        except Exception as e: plugin_logger.error(f"解析画廊详情时出错: {e}")
         
         # 如果最终字典为空，记录日志
         if not detail:
-            logging.warning("画廊详情解析结果为空。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("画廊详情解析结果为空。页面原始内容如下：")
+            plugin_logger.debug(html)
 
         return detail
 
@@ -323,8 +331,8 @@ class EhParser:
         soup = BeautifulSoup(html, 'html.parser')
         container = soup.find('div', id='gdt')
         if not container:
-            logging.warning("未能解析到预览图列表 (找不到容器 #gdt)。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("未能解析到预览图列表 (找不到容器 #gdt)。页面原始内容如下：")
+            plugin_logger.debug(html)
             return previews
         
         image_links = container.find_all('a')
@@ -338,11 +346,11 @@ class EhParser:
                     width = int(details_match.group(1)); height = int(details_match.group(2))
                     thumbnail_url = details_match.group(3); x_offset = abs(int(details_match.group(4))); y_offset = abs(int(details_match.group(5)))
                     previews.append({'index': index, 'page_url': a_tag['href'], 'thumbnail_url': thumbnail_url, 'crop_x': x_offset, 'crop_y': y_offset, 'crop_w': width, 'crop_h': height})
-            except Exception as e: logging.error(f"解析单个预览图时出错: {e}"); continue
+            except Exception as e: plugin_logger.error(f"解析单个预览图时出错: {e}"); continue
         
         if not previews and image_links:
-            logging.warning("预览图列表解析结果为空，但找到了 a 标签。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("预览图列表解析结果为空，但找到了 a 标签。页面原始内容如下：")
+            plugin_logger.debug(html)
 
         return previews
 
@@ -351,13 +359,13 @@ class EhParser:
         soup = BeautifulSoup(html, 'html.parser')
         img_container = soup.find('div', id='i3')
         if not img_container:
-            logging.warning("未能解析到大图页面 (找不到容器 #i3)。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("未能解析到大图页面 (找不到容器 #i3)。页面原始内容如下：")
+            plugin_logger.debug(html)
             return None
         img_tag = img_container.find('img')
         if not img_tag or 'src' not in img_tag.attrs:
-            logging.warning("未能解析到大图 URL (在 #i3 中找不到带 src 的 img 标签)。页面原始内容如下：")
-            logging.debug(html)
+            plugin_logger.warning("未能解析到大图 URL (在 #i3 中找不到带 src 的 img 标签)。页面原始内容如下：")
+            plugin_logger.debug(html)
             return None
         return img_tag['src']
 
@@ -470,14 +478,14 @@ class ImageProcessor:
                 content_type = "image/jpeg"
             info = {"original_size": f"{original_width}x{original_height}", "compressed_size": f"{img.width}x{img.height}", "file_size": len(processed_bytes), "content_type": content_type}
             return processed_bytes, info
-        except Exception as e: logging.error(f"图片处理失败: {e}"); return None
+        except Exception as e: plugin_logger.error(f"图片处理失败: {e}"); return None
 
 # ==============================================================================
 # 核心业务逻辑 (独立的、可缓存的函数)
 # ==============================================================================
 @cached(cache=list_cache)
 def get_gallery_list_data(url: str, headers: tuple):
-    logging.info(f"缓存未命中或已过期，正在抓取列表页: {url}")
+    plugin_logger.info(f"缓存未命中或已过期，正在抓取列表页: {url}")
     html = fetch_page_for_request(url, dict(headers))
     if not html:
         # fetch_page_for_request 内部已经记录了错误，这里无需重复记录
@@ -490,7 +498,7 @@ def get_gallery_list_data(url: str, headers: tuple):
 @cached(cache=gallery_cache)
 def get_gallery_detail_data(gid: int, token: str, headers: tuple, url_builder: 'EhUrlBuilder'):
     url = url_builder.build_gallery_url(gid=gid, token=token)
-    logging.info(f"缓存未命中或已过期，正在抓取详情页: {url}")
+    plugin_logger.info(f"缓存未命中或已过期，正在抓取详情页: {url}")
     html = fetch_page_for_request(url, dict(headers))
     if not html:
         return None
@@ -498,7 +506,7 @@ def get_gallery_detail_data(gid: int, token: str, headers: tuple, url_builder: '
     parsed_data = EhParser.parse_gallery_detail(html)
     # 如果解析结果为空字典，说明解析失败
     if not parsed_data:
-        logging.warning(f"画廊详情页 {url} 解析结果为空。")
+        plugin_logger.warning(f"画廊详情页 {url} 解析结果为空。")
         # EhParser 内部已记录 HTML，这里只记录上下文
         return None
         
@@ -507,14 +515,14 @@ def get_gallery_detail_data(gid: int, token: str, headers: tuple, url_builder: '
 @cached(cache=gallery_cache)
 def get_gallery_images_data(gid: int, token: str, page: int, headers: tuple, url_builder: 'EhUrlBuilder', start_index: int = 0, limit: Optional[int] = None):
     url = f"{url_builder.build_gallery_url(gid=gid, token=token)}?p={page}"
-    logging.info(f"缓存未命中或已过期，正在抓取图片列表并解析指定范围大图: {url}")
+    plugin_logger.info(f"缓存未命中或已过期，正在抓取图片列表并解析指定范围大图: {url}")
     preview_html = fetch_page_for_request(url, dict(headers))
     if not preview_html:
         return None
         
     preview_list = EhParser.parse_preview_images(preview_html)
     if not preview_list:
-        logging.warning(f"画廊图片预览页 {url} 解析结果为空列表。")
+        plugin_logger.warning(f"画廊图片预览页 {url} 解析结果为空列表。")
         return []
 
     if limit is not None:
@@ -529,7 +537,7 @@ def get_gallery_images_data(gid: int, token: str, page: int, headers: tuple, url
             image_url = EhParser.parse_image_page(page_html)
             if image_url:
                 return position, image_url
-        logging.warning(f"无法从 {preview_item['page_url']} 获取最终图片链接。")
+        plugin_logger.warning(f"无法从 {preview_item['page_url']} 获取最终图片链接。")
         return position, None
 
     with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS) as executor:
@@ -542,7 +550,7 @@ def get_gallery_images_data(gid: int, token: str, page: int, headers: tuple, url
                     crop_info = f"&crop_x={original_item['crop_x']}&crop_y={original_item['crop_y']}&crop_w={original_item['crop_w']}&crop_h={original_item['crop_h']}"
                     thumbnail_proxy_url = f"/image/proxy?url={original_item['thumbnail_url']}{crop_info}&w={THUMBNAIL_PROXY_WIDTH}&q={THUMBNAIL_PROXY_QUALITY}"
                     final_images[index] = {'index': index, 'thumbnail_jpg': thumbnail_proxy_url, 'image_jpg': f"/image/proxy?url={image_url}"}
-            except Exception as exc: logging.error(f"并发任务生成异常: {exc}")
+            except Exception as exc: plugin_logger.error(f"并发任务生成异常: {exc}")
     return [img for img in final_images if img is not None]
 
 
@@ -571,7 +579,7 @@ def get_virtual_chapter_images_data(gid: int, token: str, chapter: int, headers:
 
 @cached(cache=image_proxy_cache)
 def get_processed_image_data(url: str, headers: tuple, max_width: int, quality: int, crop_params: Optional[tuple] = None, output_format: str = "jpeg"):
-    logging.info(f"图片缓存未命中或已过期，正在处理图片: {url}")
+    plugin_logger.info(f"图片缓存未命中或已过期，正在处理图片: {url}")
     try:
         response = http_request('GET', url, headers=dict(headers))
         response.raise_for_status()
@@ -579,8 +587,8 @@ def get_processed_image_data(url: str, headers: tuple, max_width: int, quality: 
         if crop_params: crop_dict = {'x': crop_params[0], 'y': crop_params[1], 'w': crop_params[2], 'h': crop_params[3]}
         result = ImageProcessor.process_and_compress(image_bytes=response.content, max_width=max_width, quality=quality, crop_params=crop_dict, output_format=output_format)
         return result[0] if result else None
-    except requests.RequestException as e: logging.error(f"下载原始图片失败: {e}"); return None
-    except Exception as e: logging.error(f"处理图片时发生未知错误: {e}"); return None
+    except requests.RequestException as e: plugin_logger.error(f"下载原始图片失败: {e}"); return None
+    except Exception as e: plugin_logger.error(f"处理图片时发生未知错误: {e}"); return None
 
 # ==============================================================================
 REQUEST_TIMEOUT = 20; DEFAULT_PROXY_WIDTH = 400; DEFAULT_PROXY_QUALITY = 50
@@ -604,7 +612,7 @@ def parse_user_agent(user_agent: str) -> dict:
             device_info['language'] = parts[6] if len(parts) > 6 else ''
             device_info['region'] = parts[7] if len(parts) > 7 else ''
     except Exception as e:
-        logging.warning(f"解析 User-Agent 失败: {e}")
+        plugin_logger.warning(f"解析 User-Agent 失败: {e}")
     
     return device_info
 
@@ -618,7 +626,7 @@ def parse_id(id_str: str) -> tuple:
                     return int(gid_str), token
         return None, None
     except Exception as e:
-        logging.warning(f"解析 ID 失败: {e}")
+        plugin_logger.warning(f"解析 ID 失败: {e}")
         return None, None
 
 
@@ -630,16 +638,16 @@ def fetch_page_for_request(url: str, headers: dict) -> Optional[str]:
         return response.text
     except requests.RequestException as e:
         if 'exhentai.org' in url:
-            logging.warning(f"ExHentai 请求失败，尝试回退到 E-Hentai: {e}, URL: {url}")
+            plugin_logger.warning(f"ExHentai 请求失败，尝试回退到 E-Hentai: {e}, URL: {url}")
             fallback_url = url.replace('exhentai.org', 'e-hentai.org')
             try:
                 response = http_request('GET', fallback_url, headers=headers)
                 response.raise_for_status()
-                logging.info(f"成功回退到 E-Hentai: {fallback_url}")
+                plugin_logger.info(f"成功回退到 E-Hentai: {fallback_url}")
                 return response.text
             except requests.RequestException as fallback_e:
-                logging.error(f"E-Hentai 回退也失败: {fallback_e}, URL: {fallback_url}")
+                plugin_logger.error(f"E-Hentai 回退也失败: {fallback_e}, URL: {fallback_url}")
                 return None
         else:
-            logging.error(f"请求 E-Hentai 失败: {e}, URL: {url}")
+            plugin_logger.error(f"请求 E-Hentai 失败: {e}, URL: {url}")
             return None

@@ -33,6 +33,7 @@ class EHentaiPlugin(MaiBotPlugin):
     async def on_load(self) -> None:
         self.ctx.logger.info("E-Hentai 插件已加载")
         eh_api.PROXY_URL = self.config.plugin.proxy
+        eh_api.plugin_logger = self.ctx.logger
         eh_api.REQUEST_TIMEOUT = self.config.plugin.request_timeout
         self.download_cache = {}
         self._bg_tasks = set()
@@ -62,7 +63,9 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_search(self, query: str, page: int = 1, **kwargs):
+        self.ctx.logger.info(f"[eh_search] 开始执行, query={query}, page={page}")
         def _do():
+            self.ctx.logger.info("[eh_search] _do 线程开始")
             url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
             search_url = url_builder.build_search_url(keyword=query)
             if page > 1:
@@ -91,7 +94,9 @@ class EHentaiPlugin(MaiBotPlugin):
         parameters=[]
     )
     async def eh_popular(self, **kwargs):
+        self.ctx.logger.info("[eh_popular] 开始执行")
         def _do():
+            self.ctx.logger.info("[eh_popular] _do 线程开始")
             url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
             parsed = eh_api.get_gallery_list_data(url_builder.build_popular_url(), self._get_headers_tuple())
             if not parsed: return {"success": False, "error": "获取热门画廊失败"}
@@ -112,9 +117,12 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_get_favorites(self, favcat: str = "all", page: int = 0, **kwargs):
+        self.ctx.logger.info(f"[eh_get_favorites] 开始执行, favcat={favcat}, page={page}")
         if not self.config.plugin.cookie:
-            return {"success": False, "error": "未配置 Cookie"}
+            self.ctx.logger.error("[eh_get_favorites] 未配置 Cookie")
+            return {"success": False, "error": "请先在配置中填入 Cookie 以使用收藏夹功能"}
         def _do():
+            self.ctx.logger.info("[eh_get_favorites] _do 线程开始")
             url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
             parsed = eh_api.get_gallery_list_data(url_builder.build_favorites_url(favcat=str(favcat), page=page), self._get_headers_tuple())
             if not parsed: return {"success": False, "error": "获取收藏夹失败"}
@@ -132,7 +140,9 @@ class EHentaiPlugin(MaiBotPlugin):
         parameters=[ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
     )
     async def eh_get_detail(self, gallery_id: str, **kwargs):
+        self.ctx.logger.info(f"[eh_get_detail] 开始执行, gallery_id={gallery_id}")
         def _do():
+            self.ctx.logger.info(f"[eh_get_detail] _do 线程开始, gallery_id={gallery_id}")
             gid, token = eh_api.parse_id(gallery_id)
             if not gid: return {"success": False, "error": "ID 格式错误"}
             url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
@@ -166,6 +176,7 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_read_chapter(self, gallery_id: str, chapter: int = 1, **kwargs):
+        self.ctx.logger.info(f"[eh_read_chapter] 开始执行, gallery_id={gallery_id}, chapter={chapter}")
         stream_id = kwargs.get("stream_id")
         if not stream_id: return {"success": False, "error": "缺少 stream_id"}
         cache_key = f"{gallery_id}_{chapter}"
@@ -180,6 +191,7 @@ class EHentaiPlugin(MaiBotPlugin):
         self.download_cache[cache_key] = {"status": "downloading", "items": []}
             
         async def background_task():
+            self.ctx.logger.info(f"[eh_read_chapter] bg_task 开始, gallery_id={gallery_id}, chapter={chapter}")
             try:
                 gid, token = eh_api.parse_id(gallery_id)
                 if not gid: raise ValueError("ID 格式错误")
@@ -230,6 +242,7 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_check_chapter_download(self, gallery_id: str, chapter: int = 1, **kwargs):
+        self.ctx.logger.info(f"[eh_check_chapter_download] 开始检查, gallery_id={gallery_id}, chapter={chapter}")
         cache_key = f"{gallery_id}_{chapter}"
         if cache_key not in self.download_cache: return {"success": False, "error": f"未找到画廊 {gallery_id} 第 {chapter} 章的下载任务记录。"}
         entry = self.download_cache[cache_key]
@@ -248,7 +261,9 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_read_previews(self, gallery_id: str, page: int = 0, **kwargs):
+        self.ctx.logger.info(f"[eh_read_previews] 开始执行, gallery_id={gallery_id}, page={page}")
         def _do():
+            self.ctx.logger.info(f"[eh_read_previews] _do 线程开始")
             gid, token = eh_api.parse_id(gallery_id)
             if not gid: raise ValueError("ID 格式错误")
             url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
@@ -283,9 +298,11 @@ class EHentaiPlugin(MaiBotPlugin):
         parameters=[ToolParameterInfo(name="gallery_id", type=ToolParamType.STRING, description="画廊 ID (格式: gid_token)", required=True)]
     )
     async def eh_archive_download(self, gallery_id: str, **kwargs):
+        self.ctx.logger.info(f"[eh_archive_download] 开始执行, gallery_id={gallery_id}")
         stream_id = kwargs.get("stream_id")
         if not stream_id: return {"success": False, "error": "缺少 stream_id"}
         async def background_task():
+            self.ctx.logger.info(f"[eh_archive_download] bg_task 开始, gallery_id={gallery_id}")
             try:
                 gid, token = eh_api.parse_id(gallery_id)
                 if not gid: raise ValueError("ID 格式错误")
@@ -360,7 +377,9 @@ class EHentaiPlugin(MaiBotPlugin):
         ]
     )
     async def eh_read_archive(self, gallery_id: str, offset: int = 0, limit: int = 20, **kwargs):
+        self.ctx.logger.info(f"[eh_read_archive] 开始执行, gallery_id={gallery_id}, offset={offset}, limit={limit}")
         def _do():
+            self.ctx.logger.info(f"[eh_read_archive] _do 线程开始")
             gid, token = eh_api.parse_id(gallery_id)
             if not gid: return {"success": False, "error": "ID 格式错误"}
             archive_dir = self.ctx.paths.data_dir / "archives" / f"{gid}_{token}"
