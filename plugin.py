@@ -40,6 +40,7 @@ class EHentaiPlugin(MaiBotPlugin):
     async def on_config_update(self, scope: str, config_data: dict[str, Any], version: str) -> None:
         if scope == "self":
             eh_api.REQUEST_TIMEOUT = self.config.plugin.request_timeout
+            eh_api.PROXY_URL = self.config.plugin.proxy
             self.ctx.logger.info("E-Hentai 配置已更新")
 
     def _get_headers_tuple(self) -> tuple:
