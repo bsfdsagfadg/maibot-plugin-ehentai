@@ -309,8 +309,6 @@ class EHentaiPlugin(MaiBotPlugin):
                     return
                 archive_dir.mkdir(parents=True, exist_ok=True)
                 url_builder = eh_api.EhUrlBuilder(use_exhentai=bool(self.config.plugin.cookie))
-                archiver_url = f"{url_builder.base_url}/archiver.php?gid={gid}&token={token}"
-                
                 def _do_archiver_req():
                     headers = dict(self._get_headers_tuple())
                     res = eh_api.http_request('GET', archiver_url, headers=headers)
@@ -320,8 +318,24 @@ class EHentaiPlugin(MaiBotPlugin):
                     data = {"dltype": "res", "dlcheck": "Download Resample Archive"}
                     post_res = eh_api.http_request('POST', form_action, data=data, headers=headers)
                     post_res.raise_for_status()
+                    
                     download_link = eh_api.EhParser.get_archiver_download_url(post_res.text)
                     if not download_link: raise ValueError("未能获取真实的下载直链。")
+                    
+                    # 如果这是一个重定向页（Hath network 准备页面），获取下一级的真正下载链接
+                    if "hath.network" in download_link or "exhentai.org/archive/" in download_link:
+                        prep_res = eh_api.http_request('GET', download_link, headers=headers)
+                        prep_res.raise_for_status()
+                        real_link = eh_api.EhParser.get_archiver_download_url(prep_res.text)
+                        if real_link:
+                            # 处理相对路径
+                            if real_link.startswith('/'):
+                                from urllib.parse import urlparse
+                                parsed_uri = urlparse(download_link)
+                                download_link = f"{parsed_uri.scheme}://{parsed_uri.netloc}{real_link}"
+                            else:
+                                download_link = real_link
+                                
                     return download_link
                 
                 download_link = await asyncio.to_thread(_do_archiver_req)
