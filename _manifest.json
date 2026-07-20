@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "id": "github.bsfdsagfadg.maibot-plugin-ehentai",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "name": "Ehentai使用插件",
   "description": "为 MaiBot 提供 E-Hentai 画廊搜索、元数据解析与多模态阅读能力。",
   "author": {
@@ -50,7 +50,8 @@
     }
   ],
   "capabilities": [
-    "maisaka.context.append"
+    "maisaka.context.append",
+    "send.forward"
   ],
   "i18n": {
     "default_locale": "zh-CN",

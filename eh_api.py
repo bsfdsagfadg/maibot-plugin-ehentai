@@ -188,8 +188,7 @@ class EhParser:
         main_table = soup.find('table', class_='itg gltc')
         # 如果找不到主表格，记录日志并返回空结果
         if not main_table:
-            plugin_logger.warning("未能解析到画廊列表 (找不到 'itg gltc' 表格)。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("未能解析到画廊列表 (找不到 'itg gltc' 表格)")
             return {'galleries': [], 'pagination': {}}
         
         rows = main_table.find_all('tr')
@@ -231,8 +230,7 @@ class EhParser:
         
         # 如果循环后列表仍为空，可能页面有内容但所有行都解析失败
         if not galleries and len(rows) > 1: # len(rows) > 1 是为了排除只有表头的情况
-            plugin_logger.warning("画廊列表解析结果为空，可能所有行都解析失败。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("画廊列表解析结果为空，可能所有行都解析失败")
 
         pagination = {'has_next': False, 'next_id': None}
         try:
@@ -253,8 +251,7 @@ class EhParser:
         try:
             # 检查核心元素是否存在
             if not soup.select_one('#gn') and not soup.select_one('#gj'):
-                plugin_logger.warning("未能解析到画廊详情 (找不到标题元素 #gn 或 #gj)。页面原始内容如下：")
-                plugin_logger.debug(html)
+                plugin_logger.warning("未能解析到画廊详情 (找不到标题元素 #gn 或 #gj)")
                 return {}
 
             title_elem = soup.select_one('#gn');
@@ -311,8 +308,7 @@ class EhParser:
         
         # 如果最终字典为空，记录日志
         if not detail:
-            plugin_logger.warning("画廊详情解析结果为空。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("画廊详情解析结果为空")
 
         return detail
 
@@ -351,8 +347,7 @@ class EhParser:
         soup = BeautifulSoup(html, 'html.parser')
         container = soup.find('div', id='gdt')
         if not container:
-            plugin_logger.warning("未能解析到预览图列表 (找不到容器 #gdt)。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("未能解析到预览图列表 (找不到容器 #gdt)")
             return previews
         
         image_links = container.find_all('a')
@@ -369,8 +364,7 @@ class EhParser:
             except Exception as e: plugin_logger.error(f"解析单个预览图时出错: {e}"); continue
         
         if not previews and image_links:
-            plugin_logger.warning("预览图列表解析结果为空，但找到了 a 标签。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("预览图列表解析结果为空，但找到了 a 标签")
 
         return previews
 
@@ -379,13 +373,11 @@ class EhParser:
         soup = BeautifulSoup(html, 'html.parser')
         img_container = soup.find('div', id='i3')
         if not img_container:
-            plugin_logger.warning("未能解析到大图页面 (找不到容器 #i3)。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("未能解析到大图页面 (找不到容器 #i3)")
             return None
         img_tag = img_container.find('img')
         if not img_tag or 'src' not in img_tag.attrs:
-            plugin_logger.warning("未能解析到大图 URL (在 #i3 中找不到带 src 的 img 标签)。页面原始内容如下：")
-            plugin_logger.debug(html)
+            plugin_logger.warning("未能解析到大图 URL (在 #i3 中找不到带 src 的 img 标签)")
             return None
         return img_tag['src']
 
