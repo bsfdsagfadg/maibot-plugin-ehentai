@@ -477,16 +477,28 @@ class EHentaiPlugin(MaiBotPlugin):
             
             chunk = image_files[offset:offset+limit]
             forward_messages = []
+            import io
+            from PIL import Image
             for img_path in chunk:
-                with open(img_path, "rb") as f:
-                    data = base64.b64encode(f.read()).decode("ascii")
-                    forward_messages.append({
-                        "user_nickname": "E-Hentai Archiver",
-                        "content": [
-                            {"type": "text", "content": f"Page: {img_path.name}\n"},
-                            {"type": "image", "content": data}
-                        ]
-                    })
+                try:
+                    with Image.open(img_path) as img:
+                        if img.mode in ("RGBA", "P"):
+                            img = img.convert("RGB")
+                        img.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+                        buffer = io.BytesIO()
+                        img.save(buffer, format="JPEG", quality=75)
+                        data = base64.b64encode(buffer.getvalue()).decode("ascii")
+                except Exception:
+                    with open(img_path, "rb") as f:
+                        data = base64.b64encode(f.read()).decode("ascii")
+                
+                forward_messages.append({
+                    "user_nickname": "E-Hentai Archiver",
+                    "content": [
+                        {"type": "text", "content": f"Page: {img_path.name}\n"},
+                        {"type": "image", "content": data}
+                    ]
+                })
             return forward_messages, len(image_files), len(chunk)
             
         try:
